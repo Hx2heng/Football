@@ -14,7 +14,7 @@
             "imageSrc": "images/", //图片url前缀
             "loadImg": ['bg.jpg', 'loading1.png', 'loading2.png', 'loading3.png', 'logo.png'], //等待动画图片资源
             "gameImg": ['b1.png', 'b1_2.png', 'b1_die1.png', 'ball_1.png', 'ball_2.png', 'man_1.png', 'man_2.png'], //游戏图片资源
-            "gameTime": 10, //游戏时间
+            "gameTime": 40, //游戏时间
             "ballspeed": 10, //子弹速度
             "cartLoadedTime": 50, //填弹速度
             "isMobile": navigator.userAgent.match(/(iPhone|iPod|iPad|Android|BlackBerry|mobile)/) //是否手机 
@@ -148,10 +148,10 @@
             game.time = 0;
             game.bgImg = creatImg("bg.jpg");
             game.score = 0;
+
             game.timeLimit = config.gameTime; //时间限制
             game.refresh = function() {
                 cxt.clearRect(-c_width * 4, -c_height * 4, c_width * 4, c_height * 4);
-                game.time++;
                 game.time = getGameTime();
                 game.timeLimit = config.gameTime - game.time;
                 game.drawBg();
@@ -440,10 +440,11 @@
                         //this.fillOut();
                         this.byAttackTime--;
                         this.showTime++;
+
                         if (this.byAttackTime > 0) {
                             cxt.drawImage(this.hurtmodel, _this.x, _this.y, _this.width, _this.height);
                         } else {
-                            cxt.drawImage(creatImg(game.time % 30 > 15 ? "b1.png" : "b1_2.png"), _this.x, _this.y, _this.width, _this.height);
+                            cxt.drawImage(creatImg(game.time % 2 > 0 ? "b1.png" : "b1_2.png"), _this.x, _this.y, _this.width, _this.height);
 
                         }
                     },
