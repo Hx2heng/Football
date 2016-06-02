@@ -3,24 +3,49 @@
 //2015.4.1
 (function($) {
 
-    window.gamestart = function() {
+    window.Game = function() {
         var source = []; //游戏资源, 存放图片和声音
         var c = $("#game-box"); //游戏容器
         var cxt = c.get(0).getContext("2d"); //构造画布
         var c_width, c_height; //画布的高和宽
+        var $this  = this;
+        this.handler = {}; //游戏程序
         c.fadeIn(200);
         //游戏配置
         var config = {
             "imageSrc": "images/", //图片url前缀
             "loadImg": ['bg.jpg', 'loading1.png', 'loading2.png', 'loading3.png', 'logo.png'], //等待动画图片资源
             "gameImg": ['b1.png', 'b1_2.png', 'b1_die1.png', 'ball_1.png', 'ball_2.png', 'man_1.png', 'man_2.png'], //游戏图片资源
-            "gameTime": 40, //游戏时间
+            "gameTime": 30, //游戏时间
             "ballspeed": 10, //子弹速度
             "cartLoadedTime": 50, //填弹速度
             "isMobile": navigator.userAgent.match(/(iPhone|iPod|iPad|Android|BlackBerry|mobile)/) //是否手机 
         };
+        //开始游戏
+        this.gamestart = function(){
+            main(); //执行main方法
+        }
+        //事件
+        // load - 游戏加载完成
+        // over - 游戏结束，返回游戏结果
+        // goal - 进球  miss - 没进球 keep - 守门员接球 rebound -打到门框
 
-        main(); //执行main方法
+        $this.on=function(type, fn) {//自定义事件
+            if (typeof this.handler[type] == 'undefined') {
+                this.handler[type] = [];
+            }
+            this.handler[type].push(fn);
+            }
+        $this.fire = function(type, data) {
+            if (this.handler[type] instanceof Array) {
+                var handler = this.handler[type];
+                for (var i = 0; i < handler.length; i++) {
+                    handler[i](data);
+                }
+            }
+        }
+
+        
 
         //新建图片函数
 
@@ -133,12 +158,14 @@
                 //clearInterval(loadingClock);
                 cancelAnimationFrame(loadingClock);
                 game();
+                $this.fire('load');
             });
 
         }
 
         function game() {
-            var game = {};
+
+            game = {};
 
             function getGameTime() {
                 var nowTime = new Date().getTime();
@@ -148,7 +175,7 @@
             game.time = 0;
             game.bgImg = creatImg("bg.jpg");
             game.score = 0;
-
+            game.handler = {};
             game.timeLimit = config.gameTime; //时间限制
             game.refresh = function() {
                 cxt.clearRect(-c_width * 4, -c_height * 4, c_width * 4, c_height * 4);
@@ -171,7 +198,7 @@
                     c.off("click");
                 }
                 setTimeout(function(){cancelAnimationFrame(game.clock);},0);
-                alert(game.score);
+                $this.fire('over',game.score);
                 //c.remove();
             }
             game.clear = function() {
@@ -223,7 +250,6 @@
 
                 game.clock = requestAnimationFrame(function() {
                     game.refresh();
-
                     game.clock = requestAnimationFrame(arguments.callee);
                 }); 
 
@@ -275,7 +301,7 @@
                 cxt.fillText(timeLimit, c_width - 30, c_height * .7 + 40);
                 cxt.textAlign = "right";
             }
-
+            
 
             var player = {};
             player.width = 100;
@@ -392,17 +418,23 @@
                         if ((Cr + Br) > distance) {
                             game.Goalkeepers[i].byAttack();
                             this.alive = false;
+                            $this.fire('keep');
                         }
                     }
                     if ((goal.x + goal.width) > this.x && this.y < (goal.y + goal.height) && this.x > goal.x) {
                         this.alive = false;
                         game.score++;
+                        $this.fire('goal');
                     }
-                    if (
+                    else if (
                         ((this.x > 40 && this.x < (goal.x - 20)) ||
                             (this.x > (goal.x + goal.width + 20) && this.x < (c.width() - 20))) && (this.y < (goal.y + goal.height + 20))
                     ) {
                         this.back();
+                        $this.fire('rebound');
+                    }
+                    else if(this.x<+10||this.x>(c.width()-10)){
+                        $this.fire('miss');
                     }
                 },
                 back: function() {
@@ -513,8 +545,8 @@
                 var c = m - n + 1;
                 return Math.floor(Math.random() * c + n);
             }
+            return game;
         }
-
 
 
     }

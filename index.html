@@ -27,8 +27,30 @@
     <script type="text/javascript" src="js/game.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
     <script>
-    $('#main').append('<canvas id="game-box"><p>您的浏览器不支持此游戏！</p></canvas>');
-    gamestart();
+    $(document).ready(function(){
+        $('#main').append('<canvas id="game-box"><p>您的浏览器不支持此游戏！</p></canvas>');
+        var game = new Game();
+        game.gamestart();
+        game.on('load',function(){
+            console.log('start');
+        })
+        game.on('over',function(res){
+            console.log('scroe: '+res);
+        })
+        game.on('miss',function(){
+            console.log('miss');
+        })
+        game.on('goal',function(){
+            console.log('goal');
+        })
+        game.on('rebound',function(){
+            console.log('rebound');
+        })
+        game.on('keep',function(){
+            console.log('keep');
+        })
+    })
+    
     </script>
 </body>
 
