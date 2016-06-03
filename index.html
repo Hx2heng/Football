@@ -36,6 +36,9 @@
         })
         game.on('over',function(res){
             console.log('scroe: '+res);
+            setTimeout(function(){
+                game.restart();
+            },1000);
         })
         game.on('miss',function(){
             console.log('miss');

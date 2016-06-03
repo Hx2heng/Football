@@ -1,7 +1,7 @@
 //created by hxz 
 //qq397323988
 //2015.4.1
-(function($) {
+(function() {
 
     window.Game = function() {
         var source = []; //游戏资源, 存放图片和声音
@@ -15,10 +15,10 @@
         var config = {
             "imageSrc": "images/", //图片url前缀
             "loadImg": ['bg.jpg', 'loading1.png', 'loading2.png', 'loading3.png', 'logo.png'], //等待动画图片资源
-            "gameImg": ['b1.png', 'b1_2.png', 'b1_die1.png', 'ball_1.png', 'ball_2.png', 'man_1.png', 'man_2.png'], //游戏图片资源
+            "gameImg": ['b1.png', 'b1_2.png', 'b1_die1.png', 'b1_die2.png', 'ball_1.png', 'ball_2.png', 'man_1.png', 'man_2.png'], //游戏图片资源
             "gameTime": 30, //游戏时间
             "ballspeed": 10, //子弹速度
-            "cartLoadedTime": 50, //填弹速度
+            "cartLoadedTime":50, //填弹速度
             "isMobile": navigator.userAgent.match(/(iPhone|iPod|iPad|Android|BlackBerry|mobile)/) //是否手机 
         };
         //开始游戏
@@ -43,6 +43,12 @@
                     handler[i](data);
                 }
             }
+        }
+        $this.tigger  = function (type){
+            if (typeof this.handler[type] == 'undefined') {
+               return;
+            }
+            this.handler[type]();
         }
 
         
@@ -157,16 +163,24 @@
             loadImage(config.gameImg, function() {
                 //clearInterval(loadingClock);
                 cancelAnimationFrame(loadingClock);
-                game();
+                gamePro();
                 $this.fire('load');
             });
 
         }
 
-        function game() {
+        function gamePro() {
 
             game = {};
-
+            $this.restart=function(){
+                $this.fire('restart');
+                game.clear();
+                cancelAnimationFrame(game.clock);
+                game.clock = requestAnimationFrame(function() {
+                    game.refresh();
+                    game.clock = requestAnimationFrame(arguments.callee);
+                }); 
+            };
             function getGameTime() {
                 var nowTime = new Date().getTime();
                 return parseInt((nowTime - game.beginTime) / 1000);
@@ -174,38 +188,62 @@
             game.beginTime = new Date().getTime();
             game.time = 0;
             game.bgImg = creatImg("bg.jpg");
+            game.logoImg = creatImg("logo.png");
             game.score = 0;
-            game.handler = {};
+            game.infoTime = 100;
             game.timeLimit = config.gameTime; //时间限制
             game.refresh = function() {
-                cxt.clearRect(-c_width * 4, -c_height * 4, c_width * 4, c_height * 4);
-                game.time = getGameTime();
-                game.timeLimit = config.gameTime - game.time;
+                //cxt.clearRect(-c_width * 4, -c_height * 4, c_width * 4, c_height * 4);
                 game.drawBg();
-                game.GoalkeeperLife();
-                game.ballsLife();
-                game.refreshMessage();
-                player.render();
-
+                game.info();
+                game.drawLogo();
+                if(game.infoTime<=0){
+                    game.time = getGameTime();
+                    game.timeLimit = config.gameTime - game.time;
+                    game.GoalkeeperLife();
+                    game.ballsLife();
+                    game.refreshMessage();
+                    player.render();
+                }
                 if (game.timeLimit <= 0) {
-                   	game.over();
+                    game.over();
                 }
             }
-            game.over = function() {
-                if (config.isMobile) {
-                    c.get(0).removeEventListener("touchstart");
-                } else {
-                    c.off("click");
+            game.info = function(){
+                if(game.infoTime<=0){
+                    return;
                 }
-                setTimeout(function(){cancelAnimationFrame(game.clock);},0);
-                $this.fire('over',game.score);
+                game.infoTime--;
+                cxt.fillStyle = "white";
+                cxt.font = "20px Microsoft YaHei ";
+                cxt.fillText('点击屏幕区域发球', c_width/2, c_height * .4);
+                cxt.rect(20,10,c_width-40,c_height*.6);
+                cxt.strokeStyle="white";
+                cxt.stroke();
+                cxt.textAlign = "center";
+            }
+            game.over = function() {
+                // if (config.isMobile) {
+                //     c.get(0).removeEventListener("touchstart");
+                // } else {
+                //     c.off("click");
+                // }
+                setTimeout(function(){
+                    cancelAnimationFrame(game.clock);
+                    $this.fire('over',game.score);
+                },100);
+                
                 //c.remove();
             }
             game.clear = function() {
                 cxt.clearRect(-c_width * 4, -c_height * 4, c_width * 4, c_height * 4);
                 game.time = 0;
                 game.score = 0;
+                game.infoTime = 0;
+                game.beginTime = new Date().getTime();
+                game.timeLimit = config.gameTime; //时间限制
                 game.Goalkeepers.length = 0;
+                game.GoalkeepersNum = 0;
                 player.balls.length = 0;
             }
             game.drawBg = function() {
@@ -214,19 +252,37 @@
                 cxt.drawImage(game.bgImg, 0, 0, c.width(), c.height());
 
             }
+            game.drawLogo= function() {
+                cxt.drawImage(game.logoImg, 10, 10, 70,60);
+            }
             game.start = function() {
-                game.clear();
+               // game.clear();
+                game.event();
+                game.clock = requestAnimationFrame(function() {
+                    game.refresh();
+                    game.clock = requestAnimationFrame(arguments.callee);
+                }); 
+
+                    
+               
+            };
+            game.event = function(){
                 if (config.isMobile) {
                     c.get(0).addEventListener("touchstart", function(e) {
                         e.preventDefault();
                         var touch = e.targetTouches[0];
                         var x = touch.pageX - c.offset().left;
                         var y = touch.pageY - c.offset().top;
-                        if (y < (c_height - 200)) {
-                            player.rot = player.rotate(x, y);
+                        if (y < (c_height*0.7)) {
                             if (player.cartLoaded) {
                                 player.addballs(x, y, player.rot);
                                 player.cartLoaded = false;
+                            }
+                        }
+                        
+                        if ( player.cartLoadedTime == config.cartLoadedTime) {
+                            for (var i = 0; i < game.Goalkeepers.length; i++) {
+                                game.Goalkeepers[i].changeDir();
                             }
                         }
                     })
@@ -235,35 +291,45 @@
                         var e = e ? e : window.event;
                         var x = e.clientX - c.offset().left;
                         var y = e.clientY - c.offset().top;
-                        if (y < (c_height - 200)) {
-                            player.rot = player.rotate(x, y);
+                        if (y < (c_height*0.7)) {
+                           
                             if (player.cartLoaded) {
                                 player.addballs(x, y, player.rot);
                                 player.cartLoaded = false;
                             }
                         }
+                        if ( player.cartLoadedTime == config.cartLoadedTime) {
+                            for (var i = 0; i < game.Goalkeepers.length; i++) {
+                                game.Goalkeepers[i].changeDir();
+                            }
+                        }
                     })
                 }
                 // game.clock = setInterval(function() {
-                // 	game.refresh();
+                //  game.refresh();
                 // }, game.refreshInterval);
 
-                game.clock = requestAnimationFrame(function() {
-                    game.refresh();
-                    game.clock = requestAnimationFrame(arguments.callee);
-                }); 
-
-                	
-               
-            };
+            }
             game.Goalkeepers = [];
             game.GoalkeepersNum = 0;
             game.createGoalkeepers = function() {
-                if (game.GoalkeepersNum == 1) {
-                    return;
+                if (game.GoalkeepersNum>=2) {
+                        return;
+                    }
+                if(game.time/config.gameTime<=0.7)
+                {
+                    if (game.GoalkeepersNum == 1) {
+                        return;
+                    }
+                    game.Goalkeepers.push(new Goalkeeper(1));
+                    game.GoalkeepersNum++;
                 }
-                game.Goalkeepers.push(new Goalkeeper(1));
-                game.GoalkeepersNum++;
+               
+                if(game.time/config.gameTime>0.7)
+                {
+                    game.Goalkeepers.push(new Goalkeeper(1));
+                    game.GoalkeepersNum++;
+                }
             }
             game.GoalkeeperLife = function() {
                 game.createGoalkeepers();
@@ -285,7 +351,7 @@
             }
             game.refreshMessage = function() {
                 var timeLimit = '00:' + timeset(game.timeLimit);
-                if (timeLimit == '00:01') timeLimit = "Time up!";
+                if (timeLimit == '00:01') timeLimit = "时间到!";
                 //
                 function timeset(msd, hasZero) {
                     if (msd < 10) {
@@ -319,8 +385,8 @@
             player.balls = [];
             player.balls.width = c.width() * .15;
             player.balls.height = c.width() * .15;
-            player.balls.x = c.width() * .43;
-            player.balls.y = c.height() * .67;
+            player.balls.x = c.width() * .40;
+            player.balls.y = c.height() * .75;
             player.balls.model = creatImg("ball_1.png");
             player.render = function() {
                 player.attack();
@@ -329,6 +395,7 @@
                 }
                 // cxt.restore();
                 if (player.cartLoaded) {
+                   
                     cxt.drawImage(player.man.model, player.man.x, player.man.y, player.man.width, player.man.height);
                 } else {
                     player.loadballs();
@@ -425,6 +492,9 @@
                         this.alive = false;
                         game.score++;
                         $this.fire('goal');
+                        for (var i = 0; i < game.Goalkeepers.length; i++) {
+                            game.Goalkeepers[i].unPut();
+                        }
                     }
                     else if (
                         ((this.x > 40 && this.x < (goal.x - 20)) ||
@@ -447,20 +517,22 @@
                 this.type = type;
                 this.x = c.width() * .5;
                 this.y = c.height() * .2;
-                this.vx = 2;
-                this.vy = 2;
-                this.speedX = 4;
+                this.vx = 5;
+                this.vy = 1;
+                this.speedX = 1;
                 this.speedY = 1;
                 this.showTime = 0;
                 this.lifeTime;
                 this.dieTime = 50;
                 this.byAttackTime = 0;
+                this.unputTime = 0;
                 this.alive = true;
-                var dieSpeed = 20; //死亡动画播放速度
 
 
                 this.model = creatImg("b" + this.type + ".png");
-                this.hurtmodel = creatImg("b" + this.type + "_die1.png");
+                this.hurtmodel1 = creatImg("b" + this.type + "_die1.png");
+                this.hurtmodel2 = creatImg("b" + this.type + "_die2.png");
+                this.hurtmodel3 = creatImg("b" + this.type + "_die3.png");
                 this.width = c_width / 3;
                 this.height = c_height / 4.5;
 
@@ -471,18 +543,31 @@
                         this.move();
                         //this.fillOut();
                         this.byAttackTime--;
+                        this.unputTime--;
                         this.showTime++;
 
                         if (this.byAttackTime > 0) {
-                            cxt.drawImage(this.hurtmodel, _this.x, _this.y, _this.width, _this.height);
-                        } else {
-                            cxt.drawImage(creatImg(game.time % 2 > 0 ? "b1.png" : "b1_2.png"), _this.x, _this.y, _this.width, _this.height);
+                            if(this.speedX<0){
+                                cxt.drawImage(this.hurtmodel1, _this.x, _this.y, _this.hurtmodel1.width/2.3, _this.hurtmodel1.height/2.3);
+                            }
+                            else{
+                                cxt.drawImage(this.hurtmodel2, _this.x, _this.y, _this.hurtmodel2.width/2.3, _this.hurtmodel2.height/2.3);
+                            }
+                        }
+                        else if(this.unputTime>0){
+                                cxt.drawImage(this.hurtmodel3, _this.x, _this.y, _this.hurtmodel3.width/2.3, _this.hurtmodel3.height/2.3);
+                        }
+                         else {
+                            
+                            cxt.drawImage(creatImg(this.showTime % 30 > 15 ? "b1.png" : "b1_2.png"), _this.x, _this.y, _this.width, _this.height);
 
                         }
                     },
                     move: function() {
                         if (this.x < 0 || this.x > c_width - this.width) {
                             this.speedX = -this.speedX;
+                            this.byAttackTime=0;
+                           // this.unputTime = 0;
                             if (this.x < 0) {
                                 this.x = 0;
                             } else if (this.x > c_width - this.width) {
@@ -506,6 +591,14 @@
                         }
 
                     },
+                    unPut:function(){
+                        this.changeDir();
+                        this.unputTime = 20;
+                    },
+                    changeDir:function(){
+                        this.speedX *=rd(0,1)?1:-1;
+                        this.speedY *=rd(0,1)?1:-1;
+                    },
                     fillOut: function() {
 
                         if (this.width >= (this.model.width / 2) && this.height >= (this.model.height / 2)) {
@@ -520,7 +613,7 @@
                     },
                     byAttack: function() {
                         //this.hp--;
-                        this.byAttackTime = 10;
+                        this.byAttackTime = 20;
                         this.showTime = 0;
                     },
                     die: function() {
@@ -552,4 +645,4 @@
     }
 
 
-})(jQuery)
+})()
