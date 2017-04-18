@@ -4,6 +4,7 @@
 (function() {
 
     window.Game = function() {
+        
         var source = []; //游戏资源, 存放图片和声音
         var c = $("#game-box"); //游戏容器
         var cxt = c.get(0).getContext("2d"); //构造画布
@@ -548,14 +549,14 @@
 
                         if (this.byAttackTime > 0) {
                             if(this.speedX<0){
-                                cxt.drawImage(this.hurtmodel1, _this.x, _this.y, _this.hurtmodel1.width/2.3, _this.hurtmodel1.height/2.3);
+                                cxt.drawImage(this.hurtmodel1, _this.x, _this.y,_this.width*1.3, _this.height);
                             }
                             else{
-                                cxt.drawImage(this.hurtmodel2, _this.x, _this.y, _this.hurtmodel2.width/2.3, _this.hurtmodel2.height/2.3);
+                                cxt.drawImage(this.hurtmodel2, _this.x, _this.y, _this.width*1.3, _this.height);
                             }
                         }
                         else if(this.unputTime>0){
-                                cxt.drawImage(this.hurtmodel3, _this.x, _this.y, _this.hurtmodel3.width/2.3, _this.hurtmodel3.height/2.3);
+                                cxt.drawImage(this.hurtmodel3, _this.x, _this.y, _this.width*1.2, _this.height*0.7);
                         }
                          else {
                             
